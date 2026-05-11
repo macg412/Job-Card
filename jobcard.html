@@ -809,5 +809,37 @@ window.addEventListener('DOMContentLoaded', async () => {
   showScreen('screenLibrary');
 });
 </script>
+<!-- FIELDHUB_BRIDGE_INSTALLED -->
+<script>
+/* ── Field Hub bridge: receive job context from parent shell ── */
+(function(){
+  function applyContext(ctx) {
+    function setVal(id, val, kind) {
+      var el = document.getElementById(id);
+      if (!el || val == null || val === '') return;
+      if (el.value) return;                      // don't overwrite existing draft data
+      el.value = val;
+      el.dispatchEvent(new Event('input',  { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    var apply = function() {
+      setVal('woNumber',   ctx.wo);
+      setVal('jobLocation',ctx.address || ctx.name);
+      setVal('jobType',    ctx.jobType);
+      if (!document.getElementById('jobDate').value) {
+        document.getElementById('jobDate').value = new Date().toISOString().slice(0,10);
+        document.getElementById('jobDate').dispatchEvent(new Event('input', { bubbles:true }));
+      }
+    };
+    if (document.getElementById('woNumber')) apply();
+    else document.addEventListener('DOMContentLoaded', apply);
+  }
+  window.addEventListener('message', function(e){
+    if (e.data && e.data.type === 'JOB_CONTEXT') applyContext(e.data);
+  });
+  /* Tell parent we're ready, in case the parent posted before we loaded */
+  if (window.parent !== window) window.parent.postMessage({ type:'EMBED_READY', app:'jobcard' }, '*');
+})();
+</script>
 </body>
 </html>

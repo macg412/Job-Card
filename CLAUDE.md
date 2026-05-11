@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-A single-file HTML application (`JOB CARD V1.6.html`) for Downer NZ Ltd field staff to create, save, and submit electrical job cards as PDFs via email. No build system, no server — open the file directly in a browser.
+A single-file HTML application (`jobcard.html`) for Downer NZ Ltd field staff to create, save, and submit electrical job cards as PDFs via email. No build system, no server — open the file directly in a browser.
 
 ## Running the App
 
-Open `JOB CARD V1.6.html` directly in a browser. There are no dependencies to install, no build step, and no dev server. The only external dependency is jsPDF loaded from a CDN:
+Open `jobcard.html` directly in a browser. There are no dependencies to install, no build step, and no dev server. The only external dependency is jsPDF loaded from a CDN:
 ```
 https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js
 ```
