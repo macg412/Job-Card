@@ -211,13 +211,29 @@
       <div class="card-title">Job Information</div>
       <div class="field-row">
         <label>Job Type <span class="star">*</span></label>
-        <select id="jobType"><option value="">— Select Job Type —</option><option value="Fault">Fault</option><option value="Defect">Defect</option><option value="Project">Project</option></select>
+        <select id="jobType" onchange="applyJobTypeFields()"><option value="">— Select Job Type —</option><option value="Fault">Fault</option><option value="Defect">Defect</option><option value="Project">Project</option><option value="Other">Other</option></select>
       </div>
       <div class="field-row"><label>Date <span class="star">*</span></label><input type="date" id="jobDate"></div>
       <div class="field-row"><label>500 WO Number <span class="star">*</span></label><input type="text" id="woNumber" maxlength="8" inputmode="numeric" placeholder="8-digit number"></div>
-      <div class="field-row"><label>CAE/JE Number <span class="opt">(optional)</span></label><input type="text" id="caeNumber" maxlength="12" placeholder="Up to 12 characters"></div>
-      <div class="field-row"><label>Job Location <span class="star">*</span></label><input type="text" id="jobLocation" maxlength="50" placeholder="Up to 50 characters"></div>
-      <div class="field-row"><label>Name <span class="star">*</span></label><input type="text" id="staffName" maxlength="30" placeholder="Up to 30 characters"></div>
+      <!-- Fault only -->
+      <div class="field-row" id="jfCAE" hidden><label>CAE # <span class="opt">(optional)</span></label><input type="text" id="caeNumber" maxlength="12" placeholder="CAE number"></div>
+      <div class="field-row" id="jfJE" hidden><label>JE # <span class="opt">(optional)</span></label><input type="text" id="jeNumber" maxlength="12" placeholder="JE number"></div>
+      <!-- Defect / Project -->
+      <div class="field-row" id="jfDownerWO" hidden><label>Downer WO # <span class="opt">(optional)</span></label><input type="text" id="downerWO" maxlength="20" placeholder="Downer work order #"></div>
+      <!-- Project only -->
+      <div class="field-row" id="jfELE" hidden><label>ELE # <span class="opt">(optional)</span></label><input type="text" id="eleNumber" maxlength="12" placeholder="ELE number"></div>
+      <!-- All types -->
+      <div class="field-row"><label>Job Location <span class="star">*</span></label><input type="text" id="jobLocation" maxlength="50" placeholder="Address or location"></div>
+      <div class="field-row"><label>Job Details <span class="star">*</span></label><textarea id="jobDetails" placeholder="Describe the work carried out..."></textarea></div>
+      <!-- Fault only -->
+      <div class="field-row" id="jfResp1" hidden><label>1st Responder <span class="opt">(optional)</span></label><input type="text" id="resp1" maxlength="50" placeholder="Name"></div>
+      <div class="field-row" id="jfResp2" hidden><label>2nd Responder in Charge <span class="opt">(optional)</span></label><input type="text" id="resp2" maxlength="50" placeholder="Name"></div>
+      <!-- Project only -->
+      <div class="two-col" id="jfPMs" hidden>
+        <div class="field-row" style="margin-bottom:0"><label>Downer PM <span class="opt">(optional)</span></label><input type="text" id="downerPM" maxlength="50"></div>
+        <div class="field-row" style="margin-bottom:0"><label>PowerCo PM <span class="opt">(optional)</span></label><input type="text" id="powerCoPM" maxlength="50"></div>
+      </div>
+      <div class="field-row"><label>Name <span class="star">*</span></label><input type="text" id="staffName" maxlength="30" placeholder="Your name"></div>
       <div class="two-col">
         <div class="field-row" style="margin-bottom:0">
           <div class="toggle-row"><span class="toggle-label-text">Voltage</span><div class="toggle-wrap"><span class="toggle-opt" id="voltLVlabel">LV</span><label class="toggle-switch"><input type="checkbox" id="voltToggle"><div class="toggle-track"><div class="toggle-thumb"></div></div></label><span class="toggle-opt" id="voltHVlabel">HV</span></div></div>
@@ -226,8 +242,7 @@
           <div class="toggle-row"><span class="toggle-label-text">Line Type</span><div class="toggle-wrap"><span class="toggle-opt" id="ohLabel">OH</span><label class="toggle-switch"><input type="checkbox" id="lineToggle"><div class="toggle-track"><div class="toggle-thumb"></div></div></label><span class="toggle-opt" id="ugLabel">UG</span></div></div>
         </div>
       </div>
-      <div class="field-row" style="margin-top:14px"><label>Job Details <span class="star">*</span></label><textarea id="jobDetails" placeholder="Describe the work carried out..."></textarea></div>
-      <div class="field-row"><label>How Many Staff On Site <span class="star">*</span></label><input type="number" id="staffCount" min="0" max="100" inputmode="numeric" placeholder="0 – 100"></div>
+      <div class="field-row" style="margin-top:14px"><label>How Many Staff On Site <span class="star">*</span></label><input type="number" id="staffCount" min="0" max="100" inputmode="numeric" placeholder="0 – 100"></div>
     </div>
 
     <div class="card">
@@ -379,6 +394,7 @@ function dbDelete(id) {
 let currentDraftId  = null;
 let autoSaveTimer   = null;
 let pendingDeleteId = null;
+let _hubDocId       = null;
 const photos = { before:[null,null,null,null], after:[null,null,null,null], add:[null,null,null,null] };
 
 // ═══════════════════════════════════════════════════════════════════
@@ -496,6 +512,8 @@ async function saveDraft() {
 function collectFormData() {
   return {
     jobType:gv('jobType'), jobDate:gv('jobDate'), woNumber:gv('woNumber'), caeNumber:gv('caeNumber'),
+    jeNumber:gv('jeNumber'), downerWO:gv('downerWO'), eleNumber:gv('eleNumber'),
+    resp1:gv('resp1'), resp2:gv('resp2'), downerPM:gv('downerPM'), powerCoPM:gv('powerCoPM'),
     jobLocation:gv('jobLocation'), staffName:gv('staffName'), voltToggle:tb('voltToggle'), lineToggle:tb('lineToggle'),
     jobDetails:gv('jobDetails'), staffCount:gv('staffCount'), oldPole:gv('oldPole'), newPole:gv('newPole'),
     pillar:gv('pillar'), transFuses:gv('transFuses'), hvSwitch:gv('hvSwitch'), feeder:gv('feeder'),
@@ -508,9 +526,12 @@ function collectFormData() {
 }
 
 function loadFormData(d) {
-  const fields = ['jobType','jobDate','woNumber','caeNumber','jobLocation','staffName','jobDetails','staffCount',
+  const fields = ['jobType','jobDate','woNumber','caeNumber','jeNumber','downerWO','eleNumber',
+    'resp1','resp2','downerPM','powerCoPM',
+    'jobLocation','staffName','jobDetails','staffCount',
     'oldPole','newPole','pillar','transFuses','hvSwitch','feeder','substation','otherAsset','poFor'];
   fields.forEach(id => sv(id, d[id] || ''));
+  applyJobTypeFields();
   const toggles = [['voltToggle',d.voltToggle],['lineToggle',d.lineToggle],['workCompleteToggle',d.workComplete],
     ['asBuiltsToggle',d.asBuilts],['poRequiredToggle',d.poRequired],['r2Toggle',d.r2],['ndrToggle',d.ndr]];
   toggles.forEach(([id, val]) => { sc(id, !!val); document.getElementById(id).dispatchEvent(new Event('change')); });
@@ -522,8 +543,11 @@ function loadFormData(d) {
 }
 
 function resetForm() {
-  ['jobType','jobDate','woNumber','caeNumber','jobLocation','staffName','jobDetails','staffCount',
+  ['jobType','jobDate','woNumber','caeNumber','jeNumber','downerWO','eleNumber',
+   'resp1','resp2','downerPM','powerCoPM',
+   'jobLocation','staffName','jobDetails','staffCount',
    'oldPole','newPole','pillar','transFuses','hvSwitch','feeder','substation','otherAsset','poFor'].forEach(id => sv(id,''));
+  applyJobTypeFields();
   ['voltToggle','lineToggle','workCompleteToggle','asBuiltsToggle','poRequiredToggle','r2Toggle','ndrToggle']
     .forEach(id => { sc(id,false); document.getElementById(id).dispatchEvent(new Event('change')); });
   document.getElementById('poForField').classList.remove('visible');
@@ -534,6 +558,18 @@ function resetForm() {
   const ph = document.getElementById('sigPlaceholder'); if(ph) ph.style.display='flex';
   document.getElementById('errorBanner').classList.remove('show');
   setDraftStatus('saved');
+}
+
+function applyJobTypeFields() {
+  const t = gv('jobType');
+  const show = (id, v) => { const el = document.getElementById(id); if (el) el.hidden = !v; };
+  show('jfCAE',      t === 'Fault');
+  show('jfJE',       t === 'Fault');
+  show('jfResp1',    t === 'Fault');
+  show('jfResp2',    t === 'Fault');
+  show('jfDownerWO', t === 'Defect' || t === 'Project');
+  show('jfELE',      t === 'Project');
+  show('jfPMs',      t === 'Project');
 }
 
 function sv(id,v){ const e=document.getElementById(id); if(e) e.value=v; }
@@ -682,7 +718,9 @@ function validateForm() {
   return errs;
 }
 
-['jobType','jobDate','woNumber','caeNumber','jobLocation','staffName','jobDetails','staffCount',
+['jobType','jobDate','woNumber','caeNumber','jeNumber','downerWO','eleNumber',
+ 'resp1','resp2','downerPM','powerCoPM',
+ 'jobLocation','staffName','jobDetails','staffCount',
  'oldPole','newPole','pillar','transFuses','hvSwitch','feeder','substation','otherAsset','poFor'].forEach(id=>{
   const e=document.getElementById(id); if(e){ e.addEventListener('input',()=>{validateForm();scheduleSave();}); e.addEventListener('change',()=>{validateForm();scheduleSave();}); }
 });
@@ -744,12 +782,22 @@ async function generateAndSend() {
   function fld(l,v){ const val=v||'—',cW=PW-ML-MR; doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(90,112,144); const ll=doc.splitTextToSize(l.toUpperCase(),cW); doc.setFontSize(9.5); doc.setFont('helvetica','normal'); doc.setTextColor(26,38,54); const vl=doc.splitTextToSize(val,cW); chk(ll.length*4+vl.length*5.5+6); doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(90,112,144); doc.text(ll,ML,y); y+=ll.length*4+1.5; doc.setFontSize(9.5); doc.setFont('helvetica','normal'); doc.setTextColor(26,38,54); doc.text(vl,ML,y); y+=vl.length*5.5+1.5; doc.setDrawColor(200,214,229); doc.line(ML,y,PW-MR,y); y+=3.5; }
 
   const jobType=gv('jobType'),jobDate=fmtD(gv('jobDate')),woNum=gv('woNumber'),caeNum=gv('caeNumber'),jobLoc=gv('jobLocation');
+  const jeNum=gv('jeNumber'),downerWOv=gv('downerWO'),eleNum=gv('eleNumber');
+  const resp1v=gv('resp1'),resp2v=gv('resp2'),downerPMv=gv('downerPM'),powerCoPMv=gv('powerCoPM');
   const name=gv('staffName'),voltage=tb('voltToggle')?'HV':'LV',lineType=tb('lineToggle')?'Underground (UG)':'Overhead (OH)';
   const details=gv('jobDetails'),staff=gv('staffCount'),workComp=tb('workCompleteToggle')?'Yes':'No';
   const asBuilts=tb('asBuiltsToggle')?'Yes':'No',poReq=tb('poRequiredToggle')?'Yes':'No',poFor=gv('poFor');
   const r2=tb('r2Toggle')?'Yes':'No',ndr=tb('ndrToggle')?'Yes':'No';
 
-  sec('JOB INFORMATION'); fld('Job Type',jobType); fld('Date',jobDate); fld('500 WO Number',woNum); fld('CAE/JE Number',caeNum||'—'); fld('Job Location',jobLoc); fld('Name',name); fld('Voltage',voltage); fld('Overhead / Underground',lineType); fld('Job Details',details); fld('Staff on Site',staff);
+  sec('JOB INFORMATION');
+  fld('Job Type',jobType); fld('Date',jobDate); fld('500 WO Number',woNum);
+  if(jobType==='Fault'){ if(caeNum) fld('CAE #',caeNum); if(jeNum) fld('JE #',jeNum); }
+  if(jobType==='Defect'||jobType==='Project'){ if(downerWOv) fld('Downer WO #',downerWOv); }
+  if(jobType==='Project'){ if(eleNum) fld('ELE #',eleNum); }
+  fld('Job Location',jobLoc); fld('Job Details',details);
+  if(jobType==='Fault'){ if(resp1v) fld('1st Responder',resp1v); if(resp2v) fld('2nd Responder in Charge',resp2v); }
+  if(jobType==='Project'){ if(downerPMv||powerCoPMv){ fld('Downer PM',downerPMv||'—'); fld('PowerCo PM',powerCoPMv||'—'); } }
+  fld('Name',name); fld('Voltage',voltage); fld('Overhead / Underground',lineType); fld('Staff on Site',staff);
 
   sec('ASSET DETAILS');
   const assets=[['Old Pole #',gv('oldPole')],['New Pole #',gv('newPole')],['Pillar #',gv('pillar')],['Transformer/Fuses',gv('transFuses')],['HV Switch',gv('hvSwitch')],['Feeder',gv('feeder')],['Substation',gv('substation')],['Other',gv('otherAsset')]];
@@ -786,11 +834,21 @@ async function generateAndSend() {
   const dateFn=fmtF(gv('jobDate')),safeLoc=jobLoc.replace(/[\/\\:*?"<>|]/g,'-');
   const filename=`${woNum} - ${safeLoc} - ${dateFn}.pdf`;
   document.getElementById('processingOverlay').classList.remove('show');
+  const pdfDataUri = doc.output('datauristring');
   doc.save(filename);
+
+  // Upload to hub when embedded in a job folder
+  if (window.parent !== window && _hubDocId) {
+    window.parent.postMessage({ type:'SAVE_PDF', docId:_hubDocId, pdfDataUri, formPayload:collectFormData(), fileName:filename }, '*');
+  }
 
   const emailMap={Fault:'EnergyValleyFaults@downergroup.com',Defect:'EnergyValleyDefects@downergroup.com',Project:'EnergyValleyProjects@downer.co.nz'};
   const to=emailMap[jobType]||'';
-  const bodyLines=['Energy Valley — Job Card','========================',`Job Type:        ${jobType}`,`Date:            ${jobDate}`,`500 WO Number:   ${woNum}`,`CAE/JE Number:   ${caeNum||'—'}`,`Job Location:    ${jobLoc}`,`Name:            ${name}`,`Voltage:         ${voltage}`,`Line Type:       ${lineType}`,'','Job Details:',details,'',`Staff on Site:   ${staff}`,'','─── Asset Details ───',...assets.map(a=>`${a[0]}: ${a[1]||'—'}`),'','─── Work Completion ───',`Work Complete:   ${workComp}`,`As-Builts Reqd: ${asBuilts}`,`PO/s Required:  ${poReq}${poReq==='Yes'?'  —  PO For: '+poFor:''}`,`R2 Noti Created:${r2}`,`NDR Required:   ${ndr}`,'','Please find the signed PDF attached to this email.'];
+  const typeLines=[];
+  if(jobType==='Fault'){ if(caeNum) typeLines.push(`CAE #:           ${caeNum}`); if(jeNum) typeLines.push(`JE #:            ${jeNum}`); if(resp1v) typeLines.push(`1st Responder:   ${resp1v}`); if(resp2v) typeLines.push(`2nd Responder:   ${resp2v}`); }
+  if(jobType==='Defect'||jobType==='Project'){ if(downerWOv) typeLines.push(`Downer WO #:     ${downerWOv}`); }
+  if(jobType==='Project'){ if(eleNum) typeLines.push(`ELE #:           ${eleNum}`); if(downerPMv) typeLines.push(`Downer PM:       ${downerPMv}`); if(powerCoPMv) typeLines.push(`PowerCo PM:      ${powerCoPMv}`); }
+  const bodyLines=['Energy Valley — Job Card','========================',`Job Type:        ${jobType}`,`Date:            ${jobDate}`,`500 WO Number:   ${woNum}`,...typeLines,`Job Location:    ${jobLoc}`,`Name:            ${name}`,`Voltage:         ${voltage}`,`Line Type:       ${lineType}`,'','Job Details:',details,'',`Staff on Site:   ${staff}`,'','─── Asset Details ───',...assets.map(a=>`${a[0]}: ${a[1]||'—'}`),'','─── Work Completion ───',`Work Complete:   ${workComp}`,`As-Builts Reqd: ${asBuilts}`,`PO/s Required:  ${poReq}${poReq==='Yes'?'  —  PO For: '+poFor:''}`,`R2 Noti Created:${r2}`,`NDR Required:   ${ndr}`,'','Please find the signed PDF attached to this email.'];
   const subject=encodeURIComponent(`Job Card: ${woNum} — ${safeLoc} — ${dateFn}`);
   const body=encodeURIComponent(bodyLines.join('\n'));
   setTimeout(()=>{
@@ -815,22 +873,41 @@ window.addEventListener('DOMContentLoaded', async () => {
 /* ── Field Hub bridge: receive job context from parent shell ── */
 (function(){
   function applyContext(ctx) {
-    function setVal(id, val, kind) {
+    // Store doc ID for PDF upload
+    if (ctx.docId) _hubDocId = ctx.docId;
+
+    function setVal(id, val) {
       var el = document.getElementById(id);
       if (!el || val == null || val === '') return;
-      if (el.value) return;                      // don't overwrite existing draft data
+      if (el.value) return; // don't overwrite existing draft data
       el.value = val;
       el.dispatchEvent(new Event('input',  { bubbles: true }));
       el.dispatchEvent(new Event('change', { bubbles: true }));
     }
     var apply = function() {
-      setVal('woNumber',   ctx.wo);
-      setVal('jobLocation',ctx.address || ctx.name);
-      setVal('jobType',    ctx.jobType);
+      setVal('woNumber',  ctx.wo);
+      setVal('jobType',   ctx.jobType);
+      // Apply type-specific field visibility before filling them
+      if (typeof applyJobTypeFields === 'function') applyJobTypeFields();
+      setVal('jobLocation', ctx.address || ctx.name);
+      setVal('jobDetails',  ctx.description);
+      setVal('staffName',   ctx.userName);
+      // Always set today as date if blank
       if (!document.getElementById('jobDate').value) {
         document.getElementById('jobDate').value = new Date().toISOString().slice(0,10);
         document.getElementById('jobDate').dispatchEvent(new Event('input', { bubbles:true }));
       }
+      // Fault-specific
+      setVal('caeNumber', ctx.cae);
+      setVal('jeNumber',  ctx.je);
+      setVal('resp1',     ctx.first_responder);
+      setVal('resp2',     ctx.second_responder);
+      // Defect / Project
+      setVal('downerWO',  ctx.downer_wo_number);
+      // Project-specific
+      setVal('eleNumber', ctx.ele_number);
+      setVal('downerPM',  ctx.downer_pm);
+      setVal('powerCoPM', ctx.powerco_pm);
     };
     if (document.getElementById('woNumber')) apply();
     else document.addEventListener('DOMContentLoaded', apply);
