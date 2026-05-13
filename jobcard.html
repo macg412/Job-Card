@@ -885,26 +885,23 @@ window.addEventListener('DOMContentLoaded', async () => {
       el.dispatchEvent(new Event('change', { bubbles: true }));
     }
     var apply = function() {
+      // Auto-start new draft so values are set AFTER resetForm(), not before
+      if (typeof newDraft === 'function') newDraft();
       setVal('woNumber',  ctx.wo);
       setVal('jobType',   ctx.jobType);
-      // Apply type-specific field visibility before filling them
       if (typeof applyJobTypeFields === 'function') applyJobTypeFields();
       setVal('jobLocation', ctx.address || ctx.name);
       setVal('jobDetails',  ctx.description);
       setVal('staffName',   ctx.userName);
-      // Always set today as date if blank
       if (!document.getElementById('jobDate').value) {
         document.getElementById('jobDate').value = new Date().toISOString().slice(0,10);
         document.getElementById('jobDate').dispatchEvent(new Event('input', { bubbles:true }));
       }
-      // Fault-specific
       setVal('caeNumber', ctx.cae);
       setVal('jeNumber',  ctx.je);
       setVal('resp1',     ctx.first_responder);
       setVal('resp2',     ctx.second_responder);
-      // Defect / Project
       setVal('downerWO',  ctx.downer_wo_number);
-      // Project-specific
       setVal('eleNumber', ctx.ele_number);
       setVal('downerPM',  ctx.downer_pm);
       setVal('powerCoPM', ctx.powerco_pm);
