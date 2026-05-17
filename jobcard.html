@@ -501,7 +501,11 @@ async function saveDraft() {
   if (!currentDraftId) return;
   setDraftStatus('saving');
   try {
-    await dbPut({ id: currentDraftId, updatedAt: Date.now(), data: collectFormData() });
+    const data = collectFormData();
+    await dbPut({ id: currentDraftId, updatedAt: Date.now(), data });
+    if (_hubDocId && window.parent !== window) {
+      window.parent.postMessage({ type: 'DRAFT_SAVE', docId: _hubDocId, payload: data }, '*');
+    }
     setDraftStatus('saved');
   } catch(e) { console.error('Draft save failed', e); }
 }
@@ -885,7 +889,18 @@ window.addEventListener('DOMContentLoaded', async () => {
       el.dispatchEvent(new Event('change', { bubbles: true }));
     }
     var apply = function() {
-      // Auto-start new draft so values are set AFTER resetForm(), not before
+      // If the hub sends back a saved payload, restore the draft from it
+      if (ctx.payload && typeof loadFormData === 'function') {
+        if (typeof newDraft === 'function') newDraft();
+        loadFormData(ctx.payload);
+        if (ctx.payload.signatureData && typeof restoreSignature === 'function') {
+          setTimeout(function(){ restoreSignature(ctx.payload.signatureData); }, 100);
+        }
+        if (typeof validateForm === 'function') validateForm();
+        if (typeof setDraftStatus === 'function') setDraftStatus('saved');
+        return;
+      }
+      // No saved payload — fresh draft, auto-fill from hub context
       if (typeof newDraft === 'function') newDraft();
       setVal('woNumber',  ctx.wo);
       setVal('jobType',   ctx.jobType);
