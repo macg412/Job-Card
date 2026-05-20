@@ -857,8 +857,12 @@ async function generateAndSend() {
   const body=encodeURIComponent(bodyLines.join('\n'));
   setTimeout(()=>{
     window.location.href=`mailto:${to}?subject=${subject}&body=${body}`;
-    alert(`✅ PDF saved as:\n"${filename}"\n\nEmail opening to:\n${to}\n\nPlease attach the PDF before sending.\n\nDraft removed from library.`);
-    showScreen('screenLibrary'); renderLibrary();
+    alert(`✅ PDF saved as:\n"${filename}"\n\nEmail opening${to?` to:\n${to}`:':\n(No email mapping for this job type)'}\n\nPlease attach the PDF before sending.`);
+    if(window.parent!==window){
+      window.parent.postMessage({type:'APP_DONE'},'*');
+    }else{
+      showScreen('screenLibrary'); renderLibrary();
+    }
   },800);
 }
 
