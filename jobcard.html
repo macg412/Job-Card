@@ -282,6 +282,7 @@ let currentDraftId = null;
 let autoSaveTimer  = null;
 let _hubDocId      = null;
 const photos = { before:[null,null,null,null], after:[null,null,null,null], add:[null,null,null,null] };
+const _pendingUploads = {};
 
 // ═══════════════════════════════════════════════════════════════════
 // NEW FORM
@@ -411,7 +412,14 @@ function buildPhotoGrid(group) {
     const idx=i;
     fi.addEventListener('change', function() {
       const f=this.files[0]; if(!f) return;
-      loadImg(f, url => { photos[group][idx]=url; renderSlot(group,idx); updateBadge(group); validateForm(); scheduleSave(); });
+      loadImg(f, dataUrl => {
+        photos[group][idx]=dataUrl; renderSlot(group,idx); updateBadge(group); validateForm(); scheduleSave();
+        if (_hubDocId && window.parent !== window) {
+          const key='jc_'+group+'_'+idx;
+          _pendingUploads[key]=url=>{ if(!url) return; photos[group][idx]=url; renderSlot(group,idx); scheduleSave(); };
+          window.parent.postMessage({type:'PHOTO_UPLOAD',docId:_hubDocId,key,dataUrl},'*');
+        }
+      });
       this.value='';
     });
     slot.appendChild(fi);
@@ -619,7 +627,7 @@ async function generateAndSend() {
       const row=valid.slice(i,i+cols); chk(maxH+6); const rowY=y;
       for(let c=0;c<row.length;c++){
         await new Promise(res=>{
-          const img=new Image(); img.onload=()=>{ const asp=img.naturalWidth/img.naturalHeight; let dw=imgW,dh=imgW/asp; if(dh>maxH){dh=maxH;dw=maxH*asp;} const x=ML+c*(imgW+colGap)+(imgW-dw)/2,yO=rowY+(maxH-dh)/2; try{doc.addImage(row[c],'JPEG',x,yO,dw,dh,undefined,'FAST');}catch(e){} doc.setDrawColor(200,214,229); doc.rect(ML+c*(imgW+colGap),rowY,imgW,maxH); res(); }; img.onerror=res; img.src=row[c];
+          const img=new Image(); if(row[c]&&row[c].startsWith('https://'))img.crossOrigin='anonymous'; img.onload=()=>{ const asp=img.naturalWidth/img.naturalHeight; let dw=imgW,dh=imgW/asp; if(dh>maxH){dh=maxH;dw=maxH*asp;} const x=ML+c*(imgW+colGap)+(imgW-dw)/2,yO=rowY+(maxH-dh)/2; try{doc.addImage(img,'JPEG',x,yO,dw,dh,undefined,'FAST');}catch(e){} doc.setDrawColor(200,214,229); doc.rect(ML+c*(imgW+colGap),rowY,imgW,maxH); res(); }; img.onerror=res; img.src=row[c];
         });
       }
       y=rowY+maxH+5;
@@ -732,6 +740,9 @@ window.addEventListener('DOMContentLoaded', () => {
     else document.addEventListener('DOMContentLoaded', apply);
   }
   window.addEventListener('message', function(e){
+    if (e.data && e.data.type === 'PHOTO_UPLOADED') {
+      var cb=_pendingUploads[e.data.key]; if(cb){delete _pendingUploads[e.data.key];cb(e.data.url);} return;
+    }
     if (e.data && e.data.type === 'JOB_CONTEXT') applyContext(e.data);
   });
   /* Tell parent we're ready, in case the parent posted before we loaded */
