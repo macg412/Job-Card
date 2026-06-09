@@ -40,9 +40,44 @@
   .screen { display: none; }
   .screen.active { display: block; }
 
+  /* ── LIBRARY ── */
+  .library-body { max-width: 900px; margin: 0 auto; padding: 22px 14px 60px; }
+  .library-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+  .library-toolbar h2 { font-size: 1.05rem; font-weight: 700; color: var(--text); }
+  .draft-count { font-size: 0.75rem; color: var(--text-light); font-weight: 400; margin-left: 7px; }
+  .btn-new { display: flex; align-items: center; gap: 7px; background: var(--header-bg); color: #fff; border: none; border-radius: 9px; padding: 12px 22px; font-size: 0.95rem; font-weight: 700; cursor: pointer; box-shadow: 0 3px 12px rgba(37,99,168,0.28); letter-spacing: 0.5px; -webkit-tap-highlight-color: rgba(0,0,0,0); }
+  .btn-new .plus { font-size: 1.2rem; line-height: 1; }
+  .btn-new:active { opacity: 0.85; }
+
+  .library-empty { text-align: center; padding: 60px 20px; color: var(--text-light); }
+  .library-empty .empty-icon { font-size: 3.5rem; margin-bottom: 14px; opacity: 0.4; }
+  .library-empty h3 { font-size: 1rem; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+  .library-empty p { font-size: 0.85rem; line-height: 1.6; }
+
+  .draft-list { display: flex; flex-direction: column; gap: 12px; }
+
+  .draft-card { background: #fff; border-radius: var(--radius); border: 1.5px solid var(--border); padding: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 14px; cursor: pointer; -webkit-tap-highlight-color: rgba(0,0,0,0); transition: border-color 0.15s; }
+  .draft-card:active { border-color: var(--header-bg); }
+
+  .draft-type-badge { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; flex-shrink: 0; }
+  .draft-type-badge.Fault   { background: #fff0f0; color: #c0392b; border: 1.5px solid #fcc; }
+  .draft-type-badge.Defect  { background: #fff8e1; color: #b7800a; border: 1.5px solid #f5dfa0; }
+  .draft-type-badge.Project { background: #e8f5e9; color: #2e7d32; border: 1.5px solid #a5d6a7; }
+  .draft-type-badge.Draft   { background: var(--group-bg); color: var(--text-light); border: 1.5px solid var(--border); }
+
+  .draft-info { flex: 1; min-width: 0; }
+  .draft-title { font-size: 0.95rem; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .draft-meta  { font-size: 0.75rem; color: var(--text-light); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .draft-saved { font-size: 0.68rem; color: #aaa; margin-top: 4px; }
+
+  .draft-del-btn { background: none; border: 1.5px solid #fcc; border-radius: 7px; color: #c0392b; width: 38px; height: 38px; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; -webkit-tap-highlight-color: rgba(0,0,0,0); }
+  .draft-del-btn:active { background: #fff0f0; }
+
   /* ── FORM ── */
   .form-topbar { background: var(--group-bg); border-bottom: 1px solid var(--border); padding: 8px 16px; }
   .form-topbar-inner { max-width: 900px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+  .btn-back { background: none; border: 1.5px solid var(--border); border-radius: 7px; padding: 8px 16px; font-size: 0.82rem; font-weight: 700; color: var(--text-light); cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: rgba(0,0,0,0); }
+  .btn-back:active { background: var(--border); }
   .draft-status-label { font-size: 0.75rem; color: var(--text-light); flex: 1; text-align: right; }
   .draft-status-label.saved { color: #2e7d32; }
 
@@ -146,10 +181,27 @@
   </div>
 </header>
 
+<!-- ══ LIBRARY SCREEN ══════════════════════════════════════════════ -->
+<div id="screenLibrary" class="screen active">
+  <div class="library-body">
+    <div class="library-toolbar">
+      <h2>Job Card Drafts <span class="draft-count" id="draftCount"></span></h2>
+      <button class="btn-new" onclick="newDraft()"><span class="plus">+</span> NEW</button>
+    </div>
+    <div id="libraryEmpty" class="library-empty" style="display:none">
+      <div class="empty-icon">📋</div>
+      <h3>No drafts yet</h3>
+      <p>Tap <strong>+ NEW</strong> to start a new job card.<br>Drafts are saved automatically as you work.</p>
+    </div>
+    <div class="draft-list" id="draftList"></div>
+  </div>
+</div>
+
 <!-- ══ FORM SCREEN ═════════════════════════════════════════════════ -->
-<div id="screenForm" class="screen active">
+<div id="screenForm" class="screen">
   <div class="form-topbar">
     <div class="form-topbar-inner">
+      <button class="btn-back" onclick="goToLibrary()">&#8592; Drafts</button>
       <span class="draft-status-label" id="draftStatusLabel">Unsaved</span>
     </div>
   </div>
@@ -257,7 +309,7 @@
 <div class="modal-overlay" id="confirmModal">
   <div class="modal-box">
     <h2>Are you finished?</h2>
-    <p>This will generate the PDF and open the email.</p>
+    <p>This will generate the PDF and open the email. The draft will be removed from the library once submitted.</p>
     <div class="modal-btns">
       <button class="btn-no" type="button" onclick="closeModal('confirmModal')">No – Keep Editing</button>
       <button class="btn-yes" type="button" onclick="confirmComplete()">Yes – Submit</button>
@@ -265,6 +317,27 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal-box">
+    <h2>Delete Draft?</h2>
+    <p>This draft and all its data will be permanently deleted. This cannot be undone.</p>
+    <div class="modal-btns">
+      <button class="btn-no" type="button" onclick="closeModal('deleteModal')">Cancel</button>
+      <button class="btn-danger" type="button" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="backModal">
+  <div class="modal-box">
+    <h2>Return to Library?</h2>
+    <p>Your progress has been saved automatically. You can return to this draft any time.</p>
+    <div class="modal-btns">
+      <button class="btn-no" type="button" onclick="closeModal('backModal')">Stay Here</button>
+      <button class="btn-yes" type="button" onclick="doGoToLibrary()">Go to Library</button>
+    </div>
+  </div>
+</div>
 
 <div class="processing-overlay" id="processingOverlay">
   <div class="spinner"></div>
@@ -274,25 +347,144 @@
 <script>
 'use strict';
 
+// ═══════════════════════════════════════════════════════════════════
+// INDEXEDDB
+// ═══════════════════════════════════════════════════════════════════
+const DB_NAME = 'JobCardDraftsDB', DB_VER = 1, STORE = 'drafts';
+let db = null;
+
+function openDB() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open(DB_NAME, DB_VER);
+    r.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains(STORE)) {
+        d.createObjectStore(STORE, { keyPath: 'id' }).createIndex('updatedAt', 'updatedAt');
+      }
+    };
+    r.onsuccess = e => { db = e.target.result; res(db); };
+    r.onerror   = e => rej(e.target.error);
+  });
+}
+function dbGetAll() {
+  return new Promise((res, rej) => {
+    const r = db.transaction(STORE,'readonly').objectStore(STORE).index('updatedAt').getAll();
+    r.onsuccess = e => res(e.target.result.reverse());
+    r.onerror   = e => rej(e.target.error);
+  });
+}
+function dbPut(draft) {
+  return new Promise((res, rej) => {
+    const r = db.transaction(STORE,'readwrite').objectStore(STORE).put(draft);
+    r.onsuccess = () => res();
+    r.onerror   = e => rej(e.target.error);
+  });
+}
+function dbDelete(id) {
+  return new Promise((res, rej) => {
+    const r = db.transaction(STORE,'readwrite').objectStore(STORE).delete(id);
+    r.onsuccess = () => res();
+    r.onerror   = e => rej(e.target.error);
+  });
+}
 
 // ═══════════════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════════════
-let currentDraftId = null;
-let autoSaveTimer  = null;
-let _hubDocId      = null;
+let currentDraftId  = null;
+let autoSaveTimer   = null;
+let pendingDeleteId = null;
+let _hubDocId       = null;
+let _exportMode     = false;
 const photos = { before:[null,null,null,null], after:[null,null,null,null], add:[null,null,null,null] };
-const _pendingUploads = {};
 
 // ═══════════════════════════════════════════════════════════════════
-// NEW FORM
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// LIBRARY RENDER
+// ═══════════════════════════════════════════════════════════════════
+async function renderLibrary() {
+  const drafts = await dbGetAll();
+  const list   = document.getElementById('draftList');
+  const empty  = document.getElementById('libraryEmpty');
+  document.getElementById('draftCount').textContent = drafts.length ? `(${drafts.length})` : '';
+  list.innerHTML = '';
+  if (!drafts.length) { empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  drafts.forEach(draft => {
+    const type  = draft.data.jobType || 'Draft';
+    const badge = ['Fault','Defect','Project'].includes(type) ? type : 'Draft';
+    const title = draft.data.woNumber ? `WO: ${draft.data.woNumber}` : (draft.data.jobLocation || 'New Job Card');
+    const meta  = [draft.data.jobType, draft.data.jobLocation, draft.data.staffName].filter(Boolean).join(' · ') || 'No details yet';
+    const saved = new Date(draft.updatedAt).toLocaleString('en-NZ',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    const card  = document.createElement('div');
+    card.className = 'draft-card';
+    card.innerHTML = `
+      <div class="draft-type-badge ${badge}">${escH(type)}</div>
+      <div class="draft-info">
+        <div class="draft-title">${escH(title)}</div>
+        <div class="draft-meta">${escH(meta)}</div>
+        <div class="draft-saved">Saved ${saved}</div>
+      </div>
+      <button class="draft-del-btn" title="Delete">🗑</button>`;
+    card.querySelector('.draft-del-btn').addEventListener('click', e => {
+      e.stopPropagation(); pendingDeleteId = draft.id;
+      document.getElementById('deleteModal').classList.add('show');
+    });
+    card.addEventListener('click', () => openDraft(draft));
+    list.appendChild(card);
+  });
+}
+function escH(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function confirmDelete() {
+  if (!pendingDeleteId) return;
+  await dbDelete(pendingDeleteId);
+  pendingDeleteId = null;
+  closeModal('deleteModal');
+  renderLibrary();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// NEW / OPEN DRAFT
 // ═══════════════════════════════════════════════════════════════════
 function newDraft() {
   currentDraftId = 'draft_' + Date.now();
   resetForm();
+  showScreen('screenForm');
   initSignature();
   validateForm();
   scheduleSave();
+}
+
+async function openDraft(draft) {
+  currentDraftId = draft.id;
+  resetForm();
+  loadFormData(draft.data);
+  showScreen('screenForm');
+  initSignature();
+  if (draft.data.signatureData) restoreSignature(draft.data.signatureData);
+  validateForm();
+  setDraftStatus('saved');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// BACK
+// ═══════════════════════════════════════════════════════════════════
+function goToLibrary() { document.getElementById('backModal').classList.add('show'); }
+async function doGoToLibrary() {
+  clearTimeout(autoSaveTimer);
+  await saveDraft();
+  closeModal('backModal');
+  showScreen('screenLibrary');
+  renderLibrary();
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -306,14 +498,17 @@ function setDraftStatus(state) {
   else { lbl.textContent = `Saved at ${new Date().toLocaleTimeString('en-NZ',{hour:'2-digit',minute:'2-digit'})}`; lbl.className = 'draft-status-label saved'; }
 }
 
-function saveDraft() {
+async function saveDraft() {
   if (!currentDraftId) return;
   setDraftStatus('saving');
-  const data = collectFormData();
-  if (_hubDocId && window.parent !== window) {
-    window.parent.postMessage({ type: 'DRAFT_SAVE', docId: _hubDocId, payload: data }, '*');
-  }
-  setDraftStatus('saved');
+  try {
+    const data = collectFormData();
+    await dbPut({ id: currentDraftId, updatedAt: Date.now(), data });
+    if (_hubDocId && window.parent !== window) {
+      window.parent.postMessage({ type: 'DRAFT_SAVE', docId: _hubDocId, payload: data }, '*');
+    }
+    setDraftStatus('saved');
+  } catch(e) { console.error('Draft save failed', e); }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -412,14 +607,7 @@ function buildPhotoGrid(group) {
     const idx=i;
     fi.addEventListener('change', function() {
       const f=this.files[0]; if(!f) return;
-      loadImg(f, dataUrl => {
-        photos[group][idx]=dataUrl; renderSlot(group,idx); updateBadge(group); validateForm(); scheduleSave();
-        if (_hubDocId && window.parent !== window) {
-          const key='jc_'+group+'_'+idx;
-          _pendingUploads[key]=url=>{ if(!url) return; photos[group][idx]=url; renderSlot(group,idx); scheduleSave(); };
-          window.parent.postMessage({type:'PHOTO_UPLOAD',docId:_hubDocId,key,dataUrl},'*');
-        }
-      });
+      loadImg(f, url => { photos[group][idx]=url; renderSlot(group,idx); updateBadge(group); validateForm(); scheduleSave(); });
       this.value='';
     });
     slot.appendChild(fi);
@@ -627,7 +815,7 @@ async function generateAndSend() {
       const row=valid.slice(i,i+cols); chk(maxH+6); const rowY=y;
       for(let c=0;c<row.length;c++){
         await new Promise(res=>{
-          const img=new Image(); if(row[c]&&row[c].startsWith('https://'))img.crossOrigin='anonymous'; img.onload=()=>{ const asp=img.naturalWidth/img.naturalHeight; let dw=imgW,dh=imgW/asp; if(dh>maxH){dh=maxH;dw=maxH*asp;} const x=ML+c*(imgW+colGap)+(imgW-dw)/2,yO=rowY+(maxH-dh)/2; try{doc.addImage(img,'JPEG',x,yO,dw,dh,undefined,'FAST');}catch(e){} doc.setDrawColor(200,214,229); doc.rect(ML+c*(imgW+colGap),rowY,imgW,maxH); res(); }; img.onerror=res; img.src=row[c];
+          const img=new Image(); img.onload=()=>{ const asp=img.naturalWidth/img.naturalHeight; let dw=imgW,dh=imgW/asp; if(dh>maxH){dh=maxH;dw=maxH*asp;} const x=ML+c*(imgW+colGap)+(imgW-dw)/2,yO=rowY+(maxH-dh)/2; try{doc.addImage(row[c],'JPEG',x,yO,dw,dh,undefined,'FAST');}catch(e){} doc.setDrawColor(200,214,229); doc.rect(ML+c*(imgW+colGap),rowY,imgW,maxH); res(); }; img.onerror=res; img.src=row[c];
         });
       }
       y=rowY+maxH+5;
@@ -652,6 +840,14 @@ async function generateAndSend() {
   const filename=`${woNum} - ${safeLoc} - ${dateFn}.pdf`;
   document.getElementById('processingOverlay').classList.remove('show');
   const pdfDataUri = doc.output('datauristring');
+
+  if(_exportMode){
+    _exportMode=false;
+    if(window.parent!==window&&_hubDocId)
+      window.parent.postMessage({type:'EXPORT_PDF_READY',docId:_hubDocId,pdfDataUri},'*');
+    return;
+  }
+
   doc.save(filename);
 
   // Upload to hub when embedded in a job folder
@@ -674,7 +870,7 @@ async function generateAndSend() {
     if(window.parent!==window){
       window.parent.postMessage({type:'APP_DONE'},'*');
     }else{
-      newDraft();
+      showScreen('screenLibrary'); renderLibrary();
     }
   },800);
 }
@@ -682,9 +878,11 @@ async function generateAndSend() {
 // ═══════════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════════
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   buildPhotoGrid('before'); buildPhotoGrid('after'); buildPhotoGrid('add');
-  newDraft();
+  await openDB();
+  await renderLibrary();
+  showScreen('screenLibrary');
 });
 </script>
 <!-- FIELDHUB_BRIDGE_INSTALLED -->
@@ -740,10 +938,23 @@ window.addEventListener('DOMContentLoaded', () => {
     else document.addEventListener('DOMContentLoaded', apply);
   }
   window.addEventListener('message', function(e){
-    if (e.data && e.data.type === 'PHOTO_UPLOADED') {
-      var cb=_pendingUploads[e.data.key]; if(cb){delete _pendingUploads[e.data.key];cb(e.data.url);} return;
-    }
     if (e.data && e.data.type === 'JOB_CONTEXT') applyContext(e.data);
+    if (e.data && e.data.type === 'EXPORT_REQUEST') {
+      _hubDocId = e.data.docId;
+      _exportMode = true;
+      var apply = function() {
+        if (e.data.payload && typeof loadFormData === 'function') {
+          if (typeof newDraft === 'function') newDraft();
+          loadFormData(e.data.payload);
+          if (e.data.payload.signatureData && typeof restoreSignature === 'function') {
+            setTimeout(function() { restoreSignature(e.data.payload.signatureData); }, 100);
+          }
+        }
+        setTimeout(function() { if (typeof generateAndSend === 'function') generateAndSend(); }, 500);
+      };
+      if (document.getElementById('woNumber')) apply();
+      else document.addEventListener('DOMContentLoaded', apply);
+    }
   });
   /* Tell parent we're ready, in case the parent posted before we loaded */
   if (window.parent !== window) window.parent.postMessage({ type:'EMBED_READY', app:'jobcard' }, '*');
